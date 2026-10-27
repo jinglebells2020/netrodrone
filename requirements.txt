@@ -1,0 +1,5 @@
+# CAD build (cad/) and physics (analysis/). Tested with Python 3.13.
+build123d==0.13.0
+numpy>=2.0
+numba>=0.60
+matplotlib>=3.8
