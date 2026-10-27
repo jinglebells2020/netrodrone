@@ -1,0 +1,77 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#fff;overflow:hidden} canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three';
+
+window.renderScene = async function (scene, view, W, H) {
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(W, H);
+  renderer.localClippingEnabled = true;
+  renderer.setClearColor(0xffffff, 1);
+  document.body.innerHTML = '';
+  document.body.appendChild(renderer.domElement);
+  const s = new THREE.Scene();
+  const clip = view.clip ? [new THREE.Plane(new THREE.Vector3(...view.clip.normal), view.clip.constant)] : [];
+  const box = new THREE.Box3();
+  for (const p of scene.parts) {
+    if (view.hide && view.hide.includes(p.name)) continue;
+    if (view.only && !view.only.includes(p.name)) continue;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(p.positions, 3));
+    g.setIndex(p.indices);
+    g.computeVertexNormals();
+    const col = new THREE.Color(p.color);
+    const op = p.opacity ?? 1;
+    const noclip = p.noclip || false;
+    const mat = new THREE.MeshStandardMaterial({ color: col, metalness: 0.05, roughness: 0.75, side: THREE.FrontSide,
+      transparent: op < 1, opacity: op, clippingPlanes: noclip ? [] : clip, flatShading: true, depthWrite: op >= 1 });
+    const mesh = new THREE.Mesh(g, mat);
+    s.add(mesh);
+    if (clip.length && !noclip && op >= 1) {
+      // back faces drawn as a darker "cut" colour so sections look filled
+      const back = new THREE.MeshBasicMaterial({ color: col.clone().multiplyScalar(0.55), side: THREE.BackSide, clippingPlanes: clip });
+      s.add(new THREE.Mesh(g, back));
+    }
+    if (p.edges !== false) {
+      const eg = new THREE.EdgesGeometry(g, 25);
+      const lm = new THREE.LineBasicMaterial({ color: 0x202020, transparent: true, opacity: op < 1 ? 0.25 : 0.55, clippingPlanes: noclip ? [] : clip });
+      s.add(new THREE.LineSegments(eg, lm));
+    }
+    g.computeBoundingBox();
+    box.union(g.boundingBox);
+  }
+  if (view.bbox) { box.set(new THREE.Vector3(...view.bbox[0]), new THREE.Vector3(...view.bbox[1])); }
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const radius = size.length() / 2;
+  const dir = new THREE.Vector3(...view.dir).normalize();
+  const up = new THREE.Vector3(...(view.up || [0, 0, 1]));
+  // fit ortho camera to projected bbox
+  const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, -10 * radius, 10 * radius);
+  cam.position.copy(center.clone().add(dir.clone().multiplyScalar(radius * 3)));
+  cam.up.copy(up);
+  cam.lookAt(center);
+  cam.updateMatrixWorld();
+  const inv = cam.matrixWorldInverse;
+  let minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+  for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
+    const v = new THREE.Vector3(x, y, z).applyMatrix4(inv);
+    minx = Math.min(minx, v.x); maxx = Math.max(maxx, v.x); miny = Math.min(miny, v.y); maxy = Math.max(maxy, v.y);
+  }
+  const cx = (minx + maxx) / 2, cy = (miny + maxy) / 2;
+  let hw = (maxx - minx) / 2 * 1.06, hh = (maxy - miny) / 2 * 1.06;
+  if (hw / hh > W / H) hh = hw * H / W; else hw = hh * W / H;
+  cam.left = cx - hw; cam.right = cx + hw; cam.top = cy + hh; cam.bottom = cy - hh;
+  cam.updateProjectionMatrix();
+  s.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const d1 = new THREE.DirectionalLight(0xffffff, 1.6); d1.position.copy(dir.clone().multiplyScalar(10).add(up.clone().multiplyScalar(6)).add(new THREE.Vector3(3, -2, 0))); s.add(d1);
+  const d2 = new THREE.DirectionalLight(0xffffff, 0.5); d2.position.set(-5, 4, -6); s.add(d2);
+  renderer.render(s, cam);
+  return renderer.domElement.toDataURL('image/png');
+};
+window.ready = true;
+</script></body></html>

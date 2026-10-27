@@ -38,6 +38,42 @@ Full numbers: [analysis/RESULTS.md](analysis/RESULTS.md).
 
 ![how it works](docs/images/how_it_works.png)
 
+### What actually flies out
+
+![what flies out](docs/images/what_flies_out.png)
+
+Only the four weights and the net leave the launcher. The AEG spring is the only energy
+source: the piston squeezes the air to about 2.5–3 bar, and the air pushes each weight with
+about 20 N. No BB is fired. The one BB in the head is the valve ball, a one-way door for air
+that stays inside. Details: [docs/RESEARCH.md §1](docs/RESEARCH.md#1-what-pushes-what).
+
+---
+
+## Using it on a drone: which method works best
+
+Every capture method we came up with was simulated against the same target, with the same
+rule for "caught": 6,704 runs from hover to 6 m/s (22 km/h). The winner is to **come from
+above with automatic aiming**. The V2 launcher then catches about 95 % of the time, either
+fired straight down from 3–4 m above or fired forward from 1–1.8 m above and 2–3 m behind.
+
+![method comparison](docs/images/method_comparison.png)
+
+- **Aim automatically.** A downward camera plus a rangefinder is the biggest single upgrade:
+  aimed by hand, the catch rate drops to about 55 %.
+- **Try your current mount first.** Firing forward fails only when you're level with the
+  target. From above and behind, the net arcs down and lands open, even in a 6 m/s headwind.
+  This is the least certain result, so ground-test it first.
+- **The latex upgrade:** a launcher with a 2 m net would catch more (83 % even aimed by hand)
+  at about half the weight. It is an estimate; not designed yet.
+- **The drape tactic:** the fixed version is the lightest (~0.2 kg) but catches less. Your
+  original version put the net into your own props in every run.
+- **Target speed:** attack drones on their attack run (50–300 km/h) are far too fast for any
+  thrown net. Design for hovering spotters, slow movers and drones waiting on the ground.
+
+Detection, tactics, latex bands, the drape idea, fast targets, attack-drone speeds and market
+size are all in **[docs/RESEARCH.md](docs/RESEARCH.md)**. The scripts are in
+[analysis/tactics/](analysis/tactics/).
+
 ---
 
 ## What is in this repo
@@ -50,6 +86,9 @@ Full numbers: [analysis/RESULTS.md](analysis/RESULTS.md).
 | `cad/build_netrodrone.py` | parametric build: change a number at the top, re-run, get new STEP/STL |
 | `cad/verify.py` | geometry checks: collisions, wall thickness, your fits unchanged, air paths open |
 | `analysis/` | the physics: `ballistics.py` (shot), `netflight.py` (net in flight), `run_analysis.py` (all figures and tables) |
+| `analysis/tactics/` | using it on a drone: firing modes, drape tactic, fast targets, and the head-to-head method comparison ([README](analysis/tactics/README.md), [results](analysis/tactics/RESULTS.md)) |
+| `docs/RESEARCH.md` | the findings: what pushes what, tactics, detection, latex bands, attack-drone speeds, market size, with sources |
+| `docs/figures/` | scripts that redraw the CAD pictures and 3D renders in `docs/images/` |
 | `docs/images/` | figures used here |
 
 ### Parts to print
@@ -155,6 +194,10 @@ cylinder head at under 3 m/s, much gentler than a normal AEG dry-fire.
 The net falls about **0.4 m by 1.5 m** and **0.7 m by 2 m**. Either aim about 15° above the
 target, or mount the launcher tilted up 10–15° on the drone. Test-shoot once and mark the impact
 point on your FPV feed (OSD crosshair).
+
+Against a moving target, don't fire level: the headwind folds the net back. Fire from
+1–1.8 m above and 2–3 m behind, or straight down from 3–4 m above, as described in
+[Using it on a drone](#using-it-on-a-drone-which-method-works-best).
 
 ---
 
@@ -299,7 +342,8 @@ If you change the bore or barrel length, keep `4 × bore area × travel` at or b
   9 g/m². Real knots and folds add some scatter. Treat the distances as ±20 %.
 - Gear clearances to the new bolt bosses assume V2 gear radii of about 18 mm (clearance ≥ 5 mm).
   Check with your gears before the final print.
-- Not modelled: wind, a moving target, wear of the printed bores.
+- Not modelled here: wind, a moving target, wear of the printed bores. Moving targets and
+  drift are covered in [analysis/tactics/](analysis/tactics/).
 
 ## Safety and legal
 
