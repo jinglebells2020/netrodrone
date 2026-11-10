@@ -293,6 +293,10 @@ class Shot:
     catch_nodes: int = 12
     stop_on_catch: bool = True
     post_catch: float = 0.10          # keep simulating this long after the first catch (spread metrics)
+    # optional, used by analysis/turret (the defaults reproduce the tactics results exactly)
+    m_net: float = 0.0                # net mass (kg); 0 = 9 g/m2 + 2 g
+    w_area: float = 0.012 * 0.018     # side-on area of one weight (m2), for its air drag
+    u0: tuple = (0.0, 0.0, 0.0)       # velocity of the launcher in the target frame (a fixed launcher facing a moving drone)
 
 
 def _grid(n):
@@ -308,7 +312,7 @@ def _grid(n):
 def run(s: Shot, rec_every=0, n_rec=0):
     rng = np.random.default_rng(s.seed)
     n = s.n; N = n * n; L0 = s.side / (n - 1)
-    m_net = 0.009 * s.side ** 2 + 0.002
+    m_net = s.m_net if s.m_net > 0 else 0.009 * s.side ** 2 + 0.002
     m_node = m_net / N
     E = _grid(n)
     k_line = EA / L0
@@ -337,7 +341,9 @@ def run(s: Shot, rec_every=0, n_rec=0):
         link_len = s.tether_w
         k_link = EA / link_len
         c_link = 2 * ZETA * np.sqrt(k_link * (m_node * s.m_w / (m_node + s.m_w)))
-        Aw = 0.012 * 0.018
+        Aw = s.w_area
+        V += np.array(s.u0, float)
+        WV += np.array(s.u0, float)
         tethered = False
         kin = np.array([1.0, 0, 0, 0, 0, 0, s.v_escape, s.tau, s.t_escape])
         k_teth = 1.0; c_teth = 0.0; clear_t0 = 0.15

@@ -76,6 +76,15 @@ size are all in **[docs/RESEARCH.md](docs/RESEARCH.md)**. The scripts are in
 
 ---
 
+## Roof turret (study in progress)
+
+A second use of the same net physics: a fixed turret on a building that finds an incoming drone, points a larger
+compressed-air net launcher at where the drone will be, and fires. The studies so far size the launcher and work out
+how good the sensor, the pan-tilt head and the fire control must be. No turret hardware is designed yet.
+See [analysis/turret/](analysis/turret/README.md) and its [results](analysis/turret/RESULTS.md).
+
+---
+
 ## What is in this repo
 
 | path | what |
@@ -87,6 +96,8 @@ size are all in **[docs/RESEARCH.md](docs/RESEARCH.md)**. The scripts are in
 | `cad/verify.py` | geometry checks: collisions, wall thickness, your fits unchanged, air paths open |
 | `analysis/` | the physics: `ballistics.py` (shot), `netflight.py` (net in flight), `run_analysis.py` (all figures and tables) |
 | `analysis/tactics/` | using it on a drone: firing modes, drape tactic, fast targets, and the head-to-head method comparison ([README](analysis/tactics/README.md), [results](analysis/tactics/RESULTS.md)) |
+| `analysis/turret/` | roof turret: launcher sizing, compressed-air sizing, and the engagement simulation ([README](analysis/turret/README.md), [results](analysis/turret/RESULTS.md)) |
+| `turret/firecontrol.py` | the turret's fire control (tracker, meeting point, firing time, shot scoring); no hardware in it |
 | `docs/RESEARCH.md` | the findings: what pushes what, tactics, detection, latex bands, attack-drone speeds, market size, with sources |
 | `docs/figures/` | scripts that redraw the CAD pictures and 3D renders in `docs/images/` |
 | `docs/images/` | figures used here |
