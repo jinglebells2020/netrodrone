@@ -29,6 +29,11 @@ SUITES = {
     "camera + good radar (0.15 m)": dict(sig_ang=0.2, rng_abs=0.15, rng_rel=0.0, rng_bias=0.0),
 }
 S_CAM, S_MID, S_GOOD = list(SUITES)
+# tracking head v0: two fixed cameras as a stereo pair. Range error grows with distance squared:
+# sigma = distance^2 * (centroid error in pixels) / (focal length in pixels * baseline) = d^2 * 0.3 / (1189 * 0.4)
+S_STEREO = "two cameras 0.4 m apart, 720p (stereo range)"
+SUITES[S_STEREO] = dict(sig_ang=0.05, rng_abs=0.0, rng_rel=0.0, rng_bias=0.0, rng_sq=0.3 / (1189 * 0.4))
+V0 = dict(suite=S_STEREO, r_det=45.0, head_rate=250.0, head_accel=2000.0, lat=0.05)     # hobby bus servos, seen at 45 m
 BASE = dict(cls="light", suite=S_MID, u=30.0, b=1.0, elev=20.0, jink=0.0, prefer=0.7, r_det=60.0, rate=30.0, lat=0.08,
             head_rate=180.0, head_accel=1500.0, t_act=0.04, disp=1.5, v_scatter=0.04)
 JINKS = (0.0, 0.25, 0.5, 1.0, 2.0)      # sideways weave at 1 Hz, peak acceleration in g
@@ -66,12 +71,14 @@ def trial(rng, net, c):
                 az = math.atan2(r[1], r[0]) + rng.normal(0, sig_ang)
                 el = math.asin(r[2] / rng_true) + rng.normal(0, sig_ang)
                 rm = rng_true * bias * (1 + rng.normal(0, su["rng_rel"])) + rng.normal(0, su["rng_abs"])
+                if "rng_sq" in su:
+                    rm += rng.normal(0, su["rng_sq"] * rng_true ** 2)
                 queue.append((t + c["lat"], t, az, el, rm))
             next_meas += 1.0 / c["rate"]
         fresh = False
         while queue and queue[0][0] <= t:
             _, tm, az, el, rm = queue.pop(0)
-            sig_r = max(su["rng_abs"], (su["rng_bias"] + su["rng_rel"]) * rm, 0.05)
+            sig_r = max(su["rng_abs"], (su["rng_bias"] + su["rng_rel"]) * rm, su.get("rng_sq", 0.0) * rm * rm, 0.05)
             trk.update(tm, az, el, rm, sig_ang, sig_r)
             n_upd += 1
             fresh = True
@@ -117,11 +124,17 @@ def main():
         cfgs[key] = dict(BASE, **kw)
 
     offsets = [0, 1, 2, 3, 4, 5]
-    for s in SUITES:
+    for s in (S_CAM, S_MID, S_GOOD):
         for b in offsets:
             add(("offset", s, b), suite=s, b=float(b))
         for u in (20.0, 30.0, 40.0):
             add(("speed", s, u), suite=s, u=u)
+    for b in offsets:
+        add(("v0", "offset", b), b=float(b), **V0)
+    for u in (20.0, 30.0, 40.0):
+        add(("v0", "speed", u), u=u, **V0)
+    for g in JINKS:
+        add(("v0", "jink", g), jink=g, **V0)
     for rate in (60.0, 120.0, 180.0, 360.0):
         for rd in (40.0, 60.0, 80.0):
             add(("head", rate, rd), head_rate=rate, head_accel=rate * 8, r_det=rd)
@@ -151,11 +164,11 @@ def main():
          "40 ms from fire command to the net leaving, net thrown within 1.5° and 4 % of its nominal speed.", "",
          "## How far from the turret can the drone be aimed?", "",
          "| sensor | " + " | ".join(f"{b} m" for b in offsets) + " |", "|---|" + "---|" * len(offsets)]
-    for s in SUITES:
+    for s in (S_CAM, S_MID, S_GOOD):
         L.append(f"| {s} | " + " | ".join(pc(("offset", s, b)) for b in offsets) + " |")
     L += ["", "Column = how far the drone's aim point is from the turret. Beyond the net's reach nothing helps.", "",
           "## Drone speed (aim point 1 m from the turret)", "", "| sensor | 20 m/s | 30 m/s | 40 m/s |", "|---|---|---|---|"]
-    for s in SUITES:
+    for s in (S_CAM, S_MID, S_GOOD):
         L.append(f"| {s} | " + " | ".join(pc(("speed", s, u)) for u in (20.0, 30.0, 40.0)) + " |")
     L += ["", "## Head speed and how early the drone is seen (aim point 1 m away)", "",
           "| head turns at | seen at 40 m | seen at 60 m | seen at 80 m |", "|---|---|---|---|"]
@@ -180,6 +193,14 @@ def main():
     for k in cfgs:
         if k[0] == "robust":
             L.append(f"| {k[1]} | {pc(k)} | {res[k]['miss_med']:.2f} m |")
+    L += ["", "## Tracking head v0: two fixed cameras as a stereo pair, hobby bus servos", "",
+          "Two identical cameras 0.4 m apart at 1280 x 720 give range from the difference between the two pictures; the error "
+          "grows with distance squared (about 2.3 m at 60 m, 0.6 m at 30 m, 0.14 m at 15 m). Drone seen at 45 m, head turning "
+          "250°/s, 30 measurements a second with 50 ms delay, light launcher.", "",
+          "| aim point from the turret | " + " | ".join(f"{b} m" for b in offsets) + " |", "|---|" + "---|" * len(offsets),
+          "| catch (30 m/s, straight) | " + " | ".join(pc(("v0", "offset", b)) for b in offsets) + " |", "",
+          "| aim point 1 m away | 20 m/s | 30 m/s | 40 m/s | weaving 0.5 g | 1 g |", "|---|---|---|---|---|---|",
+          "| catch | " + " | ".join(pc(("v0", "speed", u)) for u in (20.0, 30.0, 40.0)) + " | " + pc(("v0", "jink", 0.5)) + " | " + pc(("v0", "jink", 1.0)) + " |"]
     L += ["", "## Why engagements fail (baseline sensor)", "", "| aim point from the turret | caught | fired and missed | head not ready | never in reach |",
           "|---|---|---|---|---|"]
     for b in offsets:

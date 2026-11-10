@@ -87,6 +87,18 @@ The drone weaves from side to side once a second; the column is the peak sideway
 | net speed varies 10 % instead of 4 % | 99 % | 0.21 m |
 | valve takes 100 ms instead of 40 ms (known) | 99 % | 0.23 m |
 
+## Tracking head v0: two fixed cameras as a stereo pair, hobby bus servos
+
+Two identical cameras 0.4 m apart at 1280 x 720 give range from the difference between the two pictures; the error grows with distance squared (about 2.3 m at 60 m, 0.6 m at 30 m, 0.14 m at 15 m). Drone seen at 45 m, head turning 250°/s, 30 measurements a second with 50 ms delay, light launcher.
+
+| aim point from the turret | 0 m | 1 m | 2 m | 3 m | 4 m | 5 m |
+|---|---|---|---|---|---|---|
+| catch (30 m/s, straight) | 100 % | 98 % | 96 % | 97 % | 95 % | 85 % |
+
+| aim point 1 m away | 20 m/s | 30 m/s | 40 m/s | weaving 0.5 g | 1 g |
+|---|---|---|---|---|---|
+| catch | 100 % | 99 % | 78 % | 95 % | 51 % |
+
 ## Why engagements fail (baseline sensor)
 
 | aim point from the turret | caught | fired and missed | head not ready | never in reach |
