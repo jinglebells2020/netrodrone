@@ -13,6 +13,8 @@ All scripts run from the repo root with the packages in `requirements.txt`.
 | `pneumatic.py` | how much compressed air one shot needs | ~1 min |
 | `check_oblique.py` | checks the quick shot-scoring rule against the full net model | ~1 min |
 | `engage.py` | the whole engagement, 1,000 times per case → `RESULTS.md` | ~3 min |
+| `netlab.py` | net model for any number of weights, any net outline, a sideways ('spiral') launch and a pushed-out net; checks itself against `capture.py` | ~10 s |
+| `launch_variants.py` | launcher ideas compared at equal energy → [VARIANTS.md](VARIANTS.md) | ~4 min |
 
 The fire control itself is in [`turret/firecontrol.py`](../../turret/firecontrol.py): the tracker, the head model, the
 choice of meeting point and firing time, and the shot-scoring rule. It has no hardware in it, so the same code can run on
